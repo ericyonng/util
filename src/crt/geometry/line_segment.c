@@ -2,9 +2,9 @@
 // Created by hujianzhe
 //
 
-#include "../../../inc/crt/math.h"
 #include "../../../inc/crt/math_vec3.h"
 #include "../../../inc/crt/geometry/line_segment.h"
+#include <math.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -59,7 +59,10 @@ int mathLineClosestLine(const float lsv1[3], const float lsdir1[3], const float 
 		if (min_d) {
 			*min_d = sqrtf(nlen - dot);
 		}
-		return fcmpf(nlen, dot, CCT_EPSILON) ? GEOMETRY_LINE_PARALLEL : GEOMETRY_LINE_OVERLAP;
+		if (nlen > dot + CCT_EPSILON || nlen < dot - CCT_EPSILON) {
+			return GEOMETRY_LINE_PARALLEL;
+		}
+		return GEOMETRY_LINE_OVERLAP;
 	}
 	nlen = mathVec3Normalized(N, n);
 	dot = mathVec3Dot(v, N);
@@ -83,7 +86,12 @@ int mathLineIntersectLine(const float ls1v[3], const float ls1dir[3], const floa
 	mathVec3Cross(N, ls1dir, ls2dir);
 	if (mathVec3IsZero(N)) {
 		float dot = mathVec3Dot(v, ls2dir);
-		return fcmpf(dot * dot, mathVec3LenSq(v), CCT_EPSILON) ? GEOMETRY_LINE_PARALLEL: GEOMETRY_LINE_OVERLAP;
+		float dot_sq = dot * dot;
+		float v_lensq = mathVec3LenSq(v);
+		if (dot_sq > v_lensq + CCT_EPSILON || dot_sq < v_lensq - CCT_EPSILON) {
+			return GEOMETRY_LINE_PARALLEL;
+		}
+		return GEOMETRY_LINE_OVERLAP;
 	}
 	else if (mathVec3IsZero(v)) {
 		distance[0] = distance[1] = 0.0f;
@@ -91,7 +99,7 @@ int mathLineIntersectLine(const float ls1v[3], const float ls1dir[3], const floa
 	}
 	else {
 		float dot = mathVec3Dot(v, N);
-		if (dot < -CCT_EPSILON || dot > CCT_EPSILON) {
+		if (dot < CCT_EPSILON_NEGATE || dot > CCT_EPSILON) {
 			return GEOMETRY_LINE_SKEW;
 		}
 		dot = mathVec3Dot(v, ls2dir);
@@ -119,7 +127,7 @@ int mathLineIntersectLine(const float ls1v[3], const float ls1dir[3], const floa
 	}
 }
 
-int mathSegmentIntersectSegmentWhenInSameLine(const float ls1[2][3], const float ls2[2][3], float p[3]) {
+static int mathSegmentIntersectSegmentWhenInSameLine(const float ls1[2][3], const float ls2[2][3], float p[3]) {
 	float dot, lsdir1[3], lsdir2[3];
 	mathVec3Sub(lsdir1, ls1[1], ls1[0]);
 	mathVec3Sub(lsdir2, ls2[1], ls2[0]);
@@ -170,7 +178,7 @@ int mathSegmentIntersectSegmentWhenInSameLine(const float ls1[2][3], const float
 			mathVec3Sub(v1, ls1[0], ls2[i]);
 			mathVec3Sub(v2, ls1[1], ls2[i]);
 			dot = mathVec3Dot(v1, v2);
-			if (dot < -CCT_EPSILON) {
+			if (dot < CCT_EPSILON_NEGATE) {
 				return GEOMETRY_SEGMENT_OVERLAP;
 			}
 		}
@@ -178,7 +186,7 @@ int mathSegmentIntersectSegmentWhenInSameLine(const float ls1[2][3], const float
 			mathVec3Sub(v1, ls2[0], ls1[i]);
 			mathVec3Sub(v2, ls2[1], ls1[i]);
 			dot = mathVec3Dot(v1, v2);
-			if (dot < -CCT_EPSILON) {
+			if (dot < CCT_EPSILON_NEGATE) {
 				return GEOMETRY_SEGMENT_OVERLAP;
 			}
 		}
@@ -219,7 +227,7 @@ int mathSegmentClosestSegment(const float ls1[2][3], const float ls2[2][3], floa
 			float v[3], dot;
 			mathVec3Sub(v, ls1[i], ls2[0]);
 			dot = mathVec3Dot(v, dir2);
-			if (dot >= -CCT_EPSILON && dot <= lslen2 + CCT_EPSILON) {
+			if (dot >= CCT_EPSILON_NEGATE && dot <= lslen2 + CCT_EPSILON) {
 				mathVec3Copy(closest_p[0], ls1[i]);
 				mathVec3Copy(closest_p[1], ls2[0]);
 				mathVec3AddScalar(closest_p[1], dir2, dot);
@@ -242,7 +250,7 @@ int mathSegmentClosestSegment(const float ls1[2][3], const float ls2[2][3], floa
 			float v[3], dot;
 			mathVec3Sub(v, ls1[i], ls2[0]);
 			dot = mathVec3Dot(v, dir2);
-			if (dot < -CCT_EPSILON || dot > lslen2 + CCT_EPSILON) {
+			if (dot < CCT_EPSILON_NEGATE || dot > lslen2 + CCT_EPSILON) {
 				continue;
 			}
 			if (has_p) {
@@ -261,7 +269,7 @@ int mathSegmentClosestSegment(const float ls1[2][3], const float ls2[2][3], floa
 			float v[3], dot;
 			mathVec3Sub(v, ls2[i], ls1[0]);
 			dot = mathVec3Dot(v, dir1);
-			if (dot < -CCT_EPSILON || dot > lslen1 + CCT_EPSILON) {
+			if (dot < CCT_EPSILON_NEGATE || dot > lslen1 + CCT_EPSILON) {
 				continue;
 			}
 			if (has_p) {
@@ -323,7 +331,7 @@ void mathSegmentClosestPointTo(const float ls[2][3], const float p[3], float clo
 	mathVec3Sub(lsdir, ls[1], ls[0]);
 	lslen = mathVec3Normalized(lsdir, lsdir);
 	dot = mathPointProjectionLine(p, ls[0], lsdir, closest_p);
-	if (dot < -CCT_EPSILON) {
+	if (dot < CCT_EPSILON_NEGATE) {
 		mathVec3Copy(closest_p, ls[0]);
 	}
 	else if (dot > lslen + CCT_EPSILON) {
@@ -370,7 +378,7 @@ int mathSegmentIntersectSegment(const float ls1[2][3], const float ls2[2][3], fl
 		return 0;
 	}
 	else if (GEOMETRY_LINE_CROSS == res) {
-		if (d[0] < -CCT_EPSILON || d[1] < -CCT_EPSILON ||
+		if (d[0] < CCT_EPSILON_NEGATE || d[1] < CCT_EPSILON_NEGATE ||
 			d[0] > lslen1 + CCT_EPSILON || d[1] > lslen2 + CCT_EPSILON)
 		{
 			return 0;

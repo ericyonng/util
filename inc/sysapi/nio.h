@@ -24,6 +24,8 @@
 struct sockaddr;
 struct sockaddr_storage;
 
+/* not support disk file io */
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -41,8 +43,8 @@ typedef struct NioFD_t {
 	struct NioFD_t* __lprev;
 	struct NioFD_t* __lnext;
 	short __delete_flag;
-#if defined(_WIN32) || defined(_WIN64)
 	short __reg;
+#if defined(_WIN32) || defined(_WIN64)
 	int __domain;
 	IoOverlapped_t* __read_ol;
 	IoOverlapped_t* __write_ol;
@@ -55,11 +57,11 @@ typedef struct Nio_t {
 	FD_t __hNio;
 #if defined(_WIN32) || defined(_WIN64)
 	IoOverlapped_t* __ol_list_head;
-	NioFD_t* __alive_list_head;
 #else
 	FD_t __socketpair[2];
 #endif
 	Atom16_t __wakeup;
+	NioFD_t* __alive_list_head;
 	NioFD_t* __free_list_head;
 	void(*__fn_free_niofd)(NioFD_t*);
 } Nio_t;
@@ -71,6 +73,7 @@ __declspec_dll BOOL nioCommit(Nio_t* nio, NioFD_t* niofd, int opcode, const stru
 __declspec_dll int nioWait(Nio_t* nio, NioEv_t* e, unsigned int count, int msec);
 __declspec_dll void nioWakeup(Nio_t* nio);
 __declspec_dll NioFD_t* nioEventCheck(Nio_t* nio, const NioEv_t* e, int* ev_mask);
+__declspec_dll int nioConnectUpdate(NioFD_t* niofd);
 __declspec_dll FD_t nioAccept(NioFD_t* niofd, struct sockaddr* peer_saddr, socklen_t* p_slen);
 __declspec_dll BOOL nioClose(Nio_t* nio);
 

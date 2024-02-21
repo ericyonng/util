@@ -1,10 +1,23 @@
 # util工具库,C/C++代码分离,可运行于linux/windows/macOS平台,可直接集成到项目中,或抽取部分文件使用.  
-侧重网络通讯与协程,如IO多路复用下的并发可靠UDP/TCP的传输与监听,回调/有栈协程/无栈协程(C++20)的调度机制等实现.  
+设计原则:单一接口和模块尽可能做到绝对原子和功能分层设计，绝不做不属于它本身的事情(例如绝不把协程与io混为一个大模块，协程就是协程，io就是io).  
   
 	util/  
 		.gitignore					用于git忽略一些无用文件  
 		lib_compile.sh				unix系统编译静态链接库脚本  
 		so_compile.sh				unix系统编译动态链接库脚本  
+
+		CPP部分  
+		cpp_inc/  
+			astar						基于格子和邻接点的A*寻路算法  
+			coroutine_default_sche.h	基于C++20的无栈协程调度器,nodejs风格  
+			coroutine_helper.h			基于C++20的无栈协程结构定义,nodejs风格  
+			cpp_compiler_define			判断编译器当前指定的CPP版本  
+			heap_timer					基于标准库堆结构实现的定时器  
+			lexical_cast				简陋但可用的通用类型转换接口  
+			misc						一些无法归类的,方便兼容C风格的  
+			string_helper				一些简陋的字符串分割和to_string方法  
+
+		纯C部分  
 		inc/  
 			all						自动include所有库内头文件  
 			compiler_define			根据编译器不同,给出统一的关键字,定一缺失类型,必须的预处理语句,频闭不需要的警告等  
@@ -21,10 +34,10 @@
 				stack_co_sche		基于系统平台API实现的有栈协程调度器  
 				switch_co_sche		基于switch case语法的无栈协程调度器  
 			crt/  
-				geometry/			包含常用2D/3D几何体定义,射线/线段/AABB/OBB/球/平面/矩形/多边形  
-					collision_intersect	3D碰撞静态相交检测接口  
-					collision_detection	3D碰撞方向投射检测接口  
-				protocol/			通用协议解析  
+				geometry/  
+					geometry_def	3D几何体定义(点,线段,平面,立方盒,球,多边形,多面体)  
+					collision		3D几何体包围盒计算/相交检测/包含检测/扫掠检测接口  
+				protocol/  
 					hiredis_cli_protocol	基于hiredis代码的裁剪,只保留了客户端对RESP协议解析和构造部分  
 					httpframe			用于解析与组装HTTP协议报文  
 					websocketframe		用于解析与组装WebSocket协议报文(13版本)  
@@ -70,21 +83,3 @@
 				statistics			一些杂项统计接口  
 				terminal			提供终端控制台的操作接口  
 				time				提供统一的线程安全的时间接口  
-		cpp_inc/  
-			array						给98标准提供std::array  
-			astar						基于格子和邻接点的A*寻路算法  
-			coroutine_default_sche.h	基于C++20的无栈协程调度器,nodejs风格  
-			coroutine_helper.h			基于C++20的无栈协程结构定义,nodejs风格  
-			cpp_compiler_define			判断编译器当前指定的CPP版本,一些可以兼容98标准的关键字的定义  
-			hash						给98标准提供hash兼容实现  
-			lexical_cast				简陋但可用的通用类型转换接口  
-			misc						一些无法归类的  
-			nullptr						给98标准提供nullptr关键字  
-			optional					提供std::optional  
-			shared_ptr					提供std::shared_ptr  
-			string_helper				一些简陋的字符串分割和to_string方法  
-			unique_ptr					提供std::unique_ptr  
-			unordered_map				提供std::unordered_map(与标准库相同的CRUD接口,但不支持其他STL接口风骚的用法)  
-			unordered_set				提供std::unordered_set(同上)  
-			weak_ptr					提供std::weak_ptr  
-

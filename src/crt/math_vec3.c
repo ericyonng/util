@@ -2,9 +2,8 @@
 // Created by hujianzhe
 //
 
-#include "../../inc/crt/math.h"
 #include "../../inc/crt/math_vec3.h"
-#include <stddef.h>
+#include <math.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -27,15 +26,26 @@ float* mathVec3Set(float r[3], float x, float y, float z) {
 }
 
 int mathVec3IsZero(const float v[3]) {
-	return	fcmpf(v[0], 0.0f, CCT_EPSILON) == 0 &&
-		fcmpf(v[1], 0.0f, CCT_EPSILON) == 0 &&
-		fcmpf(v[2], 0.0f, CCT_EPSILON) == 0;
+	return	v[0] <= CCT_EPSILON && v[1] <= CCT_EPSILON && v[2] <= CCT_EPSILON &&
+			v[0] >= CCT_EPSILON_NEGATE && v[1] >= CCT_EPSILON_NEGATE && v[2] >= CCT_EPSILON_NEGATE;
 }
 
 int mathVec3Equal(const float v1[3], const float v2[3]) {
-	return	fcmpf(v1[0], v2[0], CCT_EPSILON) == 0 &&
-		fcmpf(v1[1], v2[1], CCT_EPSILON) == 0 &&
-		fcmpf(v1[2], v2[2], CCT_EPSILON) == 0;
+	float delta;
+
+	delta = v1[0] - v2[0];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	delta = v1[1] - v2[1];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	delta = v1[2] - v2[2];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	return 1;
 }
 
 float mathVec3MinElement(const float v[3]) {
@@ -70,7 +80,7 @@ float mathVec3Len(const float v[3]) {
 
 float mathVec3Normalized(float r[3], const float v[3]) {
 	float len_sq = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
-	if (len_sq > CCT_EPSILON) {
+	if (len_sq > 0.0f) {
 		float len = sqrtf(len_sq);
 		float inv_len = 1.0f / len;
 		r[0] = v[0] * inv_len;
@@ -114,6 +124,14 @@ float* mathVec3AddScalar(float r[3], const float v[3], float n) {
 	r[0] += v[0] * n;
 	r[1] += v[1] * n;
 	r[2] += v[2] * n;
+	return r;
+}
+
+/* r -= v * n */
+float* mathVec3SubScalar(float r[3], const float v[3], float n) {
+	r[0] -= v[0] * n;
+	r[1] -= v[1] * n;
+	r[2] -= v[2] * n;
 	return r;
 }
 

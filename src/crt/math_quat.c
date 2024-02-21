@@ -2,10 +2,9 @@
 // Created by hujianzhe
 //
 
-#include "../../inc/crt/math.h"
 #include "../../inc/crt/math_vec3.h"
 #include "../../inc/crt/math_quat.h"
-#include <stddef.h>
+#include <math.h>
 
 #ifdef	__cplusplus
 extern "C" {
@@ -21,7 +20,7 @@ float* mathQuatSet(float q[4], float x, float y, float z, float w) {
 
 float* mathQuatNormalized(float r[4], const float q[4]) {
 	float m = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
-	if (m > CCT_EPSILON) {
+	if (m > 0.0f) {
 		m = 1.0f / sqrtf(m);
 		r[0] = q[0] * m;
 		r[1] = q[1] * m;
@@ -133,6 +132,33 @@ void mathQuatToAxisRadian(const float q[4], float axis[3], float* radian) {
 	axis[1] = qy * s;
 	axis[2] = qz * s;
 	*radian = atan2f(s2*s, qw) * 2.0f;
+}
+
+int mathQuatIsZero(const float q[4]) {
+	return 	q[0] <= CCT_EPSILON && q[1] <= CCT_EPSILON && q[2] <= CCT_EPSILON && q[3] <= CCT_EPSILON &&
+			q[0] >= CCT_EPSILON_NEGATE && q[1] >= CCT_EPSILON_NEGATE && q[2] >= CCT_EPSILON_NEGATE && q[3] >= CCT_EPSILON_NEGATE;
+}
+
+int mathQuatEqual(const float q1[4], const float q2[4]) {
+	float delta;
+
+	delta = q1[0] - q2[0];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	delta = q1[1] - q2[1];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	delta = q1[2] - q2[2];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	delta = q1[3] - q2[3];
+	if (delta > CCT_EPSILON || delta < CCT_EPSILON_NEGATE) {
+		return 0;
+	}
+	return 1;
 }
 
 float* mathQuatIdentity(float q[4]) {

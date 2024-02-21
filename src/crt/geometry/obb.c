@@ -2,7 +2,6 @@
 // Created by hujianzhe
 //
 
-#include "../../../inc/crt/math.h"
 #include "../../../inc/crt/math_vec3.h"
 #include "../../../inc/crt/geometry/obb.h"
 #include <stddef.h>
@@ -24,13 +23,15 @@ void mathOBBToAABB(const GeometryOBB_t* obb, float o[3], float half[3]) {
 	int i;
 	float v[8][3], min_v[3], max_v[3];
 	mathOBBVertices(obb, v);
-	for (i = 0; i < 8; ++i) {
+	mathVec3Copy(min_v, v[0]);
+	mathVec3Copy(max_v, v[0]);
+	for (i = 1; i < 8; ++i) {
 		int j;
 		for (j = 0; j < 3; ++j) {
-			if (!i || min_v[j] > v[i][j]) {
+			if (min_v[j] > v[i][j]) {
 				min_v[j] = v[i][j];
 			}
-			if (!i || max_v[j] < v[i][j]) {
+			else if (max_v[j] < v[i][j]) {
 				max_v[j] = v[i][j];
 			}
 		}
@@ -126,56 +127,6 @@ void mathOBBPlaneVertices(const GeometryOBB_t* obb, float v[6][3]) {
 	mathVec3MultiplyScalar(extend, obb->axis[1], obb->half[1]);
 	mathVec3Add(v[4], obb->o, extend);
 	mathVec3Sub(v[5], obb->o, extend);
-}
-
-GeometryRect_t* mathOBBPlaneRect(const GeometryOBB_t* obb, unsigned int idx, GeometryRect_t* rect) {
-	float extend[3];
-	if (idx >= 6) {
-		return NULL;
-	}
-	if (0 == idx || 1 == idx) {
-		mathVec3MultiplyScalar(extend, obb->axis[2], obb->half[2]);
-		if (0 == idx) {
-			mathVec3Add(rect->o, obb->o, extend);
-		}
-		else {
-			mathVec3Sub(rect->o, obb->o, extend);
-		}
-		rect->half_w = obb->half[0];
-		rect->half_h = obb->half[1];
-		mathVec3Copy(rect->w_axis, obb->axis[0]);
-		mathVec3Copy(rect->h_axis, obb->axis[1]);
-		mathVec3Copy(rect->normal, obb->axis[2]);
-	}
-	else if (2 == idx || 3 == idx) {
-		mathVec3MultiplyScalar(extend, obb->axis[0], obb->half[0]);
-		if (2 == idx) {
-			mathVec3Add(rect->o, obb->o, extend);
-		}
-		else {
-			mathVec3Sub(rect->o, obb->o, extend);
-		}
-		rect->half_w = obb->half[2];
-		rect->half_h = obb->half[1];
-		mathVec3Copy(rect->w_axis, obb->axis[2]);
-		mathVec3Copy(rect->h_axis, obb->axis[1]);
-		mathVec3Copy(rect->normal, obb->axis[0]);
-	}
-	else {
-		mathVec3MultiplyScalar(extend, obb->axis[1], obb->half[1]);
-		if (4 == idx) {
-			mathVec3Add(rect->o, obb->o, extend);
-		}
-		else {
-			mathVec3Sub(rect->o, obb->o, extend);
-		}
-		rect->half_w = obb->half[0];
-		rect->half_h = obb->half[2];
-		mathVec3Copy(rect->w_axis, obb->axis[0]);
-		mathVec3Copy(rect->h_axis, obb->axis[2]);
-		mathVec3Copy(rect->normal, obb->axis[1]);
-	}
-	return rect;
 }
 
 int mathOBBHasPoint(const GeometryOBB_t* obb, const float p[3]) {

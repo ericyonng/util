@@ -11,21 +11,78 @@ extern "C" {
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
+struct {
+	volatile char emit_flags[NSIG];
+	int last_signo;
+} win32_signal_desc;
+static void win32_signal_set_emit_flags_(int signo) {
+	win32_signal_desc.emit_flags[signo] = 1;
+}
 #else
 #include <fcntl.h>
 #include <sys/ioctl.h>
+static void unix_signal_ignore_(int signo) {}
 #endif
 
 /* signal */
-sighandler_t signalRegHandler(int signo, sighandler_t func) {
+void signalReg(int signo) {
 #if defined(_WIN32) || defined(_WIN64)
-	return signal(signo, func);
+	if (signo >= NSIG) {
+		return;
+	}
+	signal(signo, win32_signal_set_emit_flags_);
 #else
-	struct sigaction act, oact;
-	act.sa_handler = func;
-	sigfillset(&act.sa_mask);
-	act.sa_flags = SA_RESTART;
-	return sigaction(signo, &act, &oact) < 0 ? SIG_ERR : oact.sa_handler;
+	struct sigaction st_sa;
+	if (signo >= NSIG) {
+		return;
+	}
+	if (SIGKILL == signo || SIGSTOP == signo) {
+		return;
+	}
+	st_sa.sa_handler = unix_signal_ignore_;
+	sigfillset(&st_sa.sa_mask);
+	st_sa.sa_flags = SA_RESTART;
+	sigaction(signo, &st_sa, NULL);
+#endif
+}
+
+BOOL signalThreadMaskNotify(void) {
+#if defined(_WIN32) || defined(_WIN64)
+	return TRUE;
+#else
+	sigset_t ss;
+	sigfillset(&ss);
+	return pthread_sigmask(SIG_SETMASK, &ss, NULL) == 0;
+#endif
+}
+
+int signalWait(void) {
+#if defined(_WIN32) || defined(_WIN64)
+	int signo = win32_signal_desc.last_signo + 1;
+	while (1) {
+		while (signo < NSIG && !win32_signal_desc.emit_flags[signo]) {
+			++signo;
+		}
+		if (signo < NSIG) {
+			break;
+		}
+		SleepEx(100, FALSE);
+		signo = 1;
+	}
+	win32_signal_desc.emit_flags[signo] = 0;
+	win32_signal_desc.last_signo = signo;
+	return signo;
+#else
+	int sig;
+	sigset_t ss;
+	sigfillset(&ss);
+	if (pthread_sigmask(SIG_SETMASK, &ss, NULL)) {
+		return -1;
+	}
+	if (sigwait(&ss, &sig)) {
+		return -1;
+	}
+	return sig;
 #endif
 }
 
